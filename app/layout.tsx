@@ -49,8 +49,9 @@ export const metadata: Metadata = {
     images: ["https://menteabaco.waltermusica.chatgpt.site/og.png"],
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [{ url: "/brand/favicon-64.png", type: "image/png", sizes: "64x64" }],
+    shortcut: "/brand/favicon-64.png",
+    apple: [{ url: "/brand/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
   },
 };
 

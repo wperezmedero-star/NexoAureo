@@ -24,13 +24,11 @@ a { color: inherit; text-decoration: none; }
 
 .site-shell { overflow: hidden; background: #fff; }
 .site-header { width: min(1180px, calc(100% - 48px)); height: 84px; margin: auto; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 20; }
-.brand { display: flex; align-items: center; gap: 11px; color: var(--navy); font-size: 21px; font-weight: 780; letter-spacing: -.7px; white-space: nowrap; }
-.brand > span:last-child > span { color: var(--green); }
-.brand-light { color: white; }
-.brand-light > span:last-child > span { color: #73d9ba; }
-.brand-mark { position: relative; width: 34px; height: 34px; display: grid; grid-template-columns: repeat(2, 8px); grid-template-rows: repeat(2, 8px); gap: 4px; place-content: center; background: linear-gradient(145deg, #0b8a6c, #075a4a); border-radius: 11px 11px 11px 3px; box-shadow: 0 7px 16px rgba(10,125,99,.22); transform: rotate(-4deg); }
-.brand-mark i { width: 8px; height: 8px; border-radius: 50%; background: #dff8ef; }
-.brand-mark i:nth-child(2), .brand-mark i:nth-child(3) { background: #e1b761; }
+.brand { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; white-space: nowrap; }
+.brand-symbol { position: relative; width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; }
+.brand-symbol img, .mini-logo img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.brand-wordmark { width: 141px; height: auto; display: block; }
+.brand-compact { padding: 7px; }
 .site-header nav { display: flex; gap: 33px; font-size: 14px; color: #405469; }
 .site-header nav a { transition: color .2s; }
 .site-header nav a:hover { color: var(--green); }
@@ -60,7 +58,7 @@ a { color: inherit; text-decoration: none; }
 .hero-glow { position: absolute; width: 410px; height: 410px; border-radius: 50%; background: radial-gradient(circle, rgba(20,172,130,.25), transparent 68%); filter: blur(10px); }
 .hero-panel { position: relative; width: 500px; height: 348px; background: #fff; border: 1px solid rgba(150,180,170,.34); border-radius: 17px; box-shadow: 0 35px 70px rgba(20,51,47,.18); transform: perspective(1000px) rotateY(-4deg) rotateX(1deg); overflow: hidden; display: grid; grid-template-columns: 57px 1fr; }
 .mini-sidebar { background: linear-gradient(#0b263e, #071b2f); padding: 18px 13px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.mini-logo { width: 29px; height: 29px; display: grid; place-items: center; background: var(--green); color: white; border-radius: 9px; font-weight: 800; }
+.mini-logo { width: 29px; height: 29px; display: grid; place-items: center; padding: 3px; background: rgba(255,255,255,.96); border-radius: 9px; }
 .mini-sidebar i { width: 20px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.18); }
 .mini-sidebar i:nth-of-type(1) { background: #55c7a7; }
 .mini-sidebar b { margin-top: auto; width: 26px; height: 26px; border: 1px solid rgba(255,255,255,.2); border-radius: 50%; }
@@ -384,7 +382,7 @@ footer > div { display: flex; gap: 22px; }
 }
 
 @media (max-width: 680px) {
-  .site-header { width: calc(100% - 28px); height: 72px; }.site-header .text-button { display: none; }.brand { font-size: 18px; }.brand-mark { width: 30px; height: 30px; }
+  .site-header { width: calc(100% - 28px); height: 72px; }.site-header .text-button { display: none; }
   .hero { padding: 55px 19px 48px; gap: 20px; }.hero h1 { font-size: 47px; letter-spacing: -2.5px; }.hero-copy > p { font-size: 15px; }.hero-actions { flex-direction: column; }.hero-actions > * { justify-content: center; }.trust-line { gap: 10px; font-size: 9px; }
   .hero-panel-wrap { height: 370px; transform: scale(.78); margin: -30px -70px; }.hero-panel { width: 470px; }.metrics { grid-template-columns: repeat(2, 1fr); padding: 20px 10px; gap: 18px 0; }.metrics div:nth-child(2) { border: 0; }
   .section { padding: 72px 20px; }.feature-grid, .calculator-grid { grid-template-columns: 1fr; }.tools-heading { align-items: start; flex-direction: column; }.method-section { gap: 20px; }.method-visual { height: 400px; transform: scale(.8); margin: -20px -60px; }.security-strip { align-items: start; flex-direction: column; padding: 28px 20px; }.security-items { flex-direction: column; gap: 12px; } footer { flex-direction: column; align-items: start; padding: 35px 20px; } footer > div { flex-wrap: wrap; }

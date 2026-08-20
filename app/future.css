@@ -44,17 +44,29 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @keyframes future-rise { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
 
 /* Marca */
-.brand { gap: 12px; color: var(--future-navy); font-size: 22px; font-weight: 760; letter-spacing: -.8px; }
-.brand > span:last-child > span, .brand-light > span:last-child > span { color: var(--future-gold-2); }
-.brand-mark { width: 38px; height: 38px; border-radius: 13px 13px 13px 4px; background: linear-gradient(145deg, #17395b, #071629); border: 1px solid rgba(241,214,122,.34); box-shadow: inset 0 0 18px rgba(54,131,178,.18), 0 10px 28px rgba(3,12,24,.24); }
-.brand-mark i { background: rgba(255,255,255,.82); }
-.brand-mark i:nth-child(2), .brand-mark i:nth-child(3) { background: var(--future-gold-2); box-shadow: 0 0 9px rgba(241,214,122,.5); }
+.brand-official { padding: 6px 10px 6px 7px; border: 1px solid rgba(9,32,54,.1); border-radius: 15px; background: rgba(255,255,255,.94); box-shadow: 0 9px 28px rgba(3,14,27,.12), inset 0 1px rgba(255,255,255,.72); }
+.brand-light { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.96); box-shadow: 0 12px 32px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.82); }
+.brand-symbol::after { content: ""; position: absolute; inset: 7%; z-index: -1; border-radius: 50%; opacity: 0; background: radial-gradient(circle, rgba(62,199,208,.32), rgba(212,175,55,.2) 45%, transparent 72%); filter: blur(7px); }
+.brand-animate .brand-symbol { transform-origin: center; animation: nexoaureo-circle-return 1.55s cubic-bezier(.22,.78,.2,1) .14s both; will-change: transform; }
+.brand-animate .brand-symbol::after { animation: nexoaureo-logo-glow 1.55s ease-out .14s both; }
+.brand-compact .brand-symbol { width: 62px; height: 62px; flex-basis: 62px; }
+
+@keyframes nexoaureo-circle-return {
+  0% { transform: translate3d(0,0,0) rotate(0deg) scale(.92); }
+  12% { transform: translate3d(8px,0,0) rotate(30deg) scale(1.02); }
+  30% { transform: translate3d(0,-9px,0) rotate(108deg) scale(1.06); }
+  50% { transform: translate3d(-9px,0,0) rotate(180deg) scale(1.07); }
+  70% { transform: translate3d(0,9px,0) rotate(252deg) scale(1.05); }
+  88% { transform: translate3d(8px,0,0) rotate(324deg) scale(1.02); }
+  100% { transform: translate3d(0,0,0) rotate(360deg) scale(1); }
+}
+@keyframes nexoaureo-logo-glow { 0%, 100% { opacity: 0; transform: scale(.75); } 42% { opacity: 1; transform: scale(1.55); } }
 
 /* Portada */
 .site-shell { position: relative; isolation: isolate; overflow: hidden; background: var(--future-night); }
 .site-shell > *:not(.future-backdrop) { position: relative; z-index: 1; }
 .site-header { width: min(1220px, calc(100% - 48px)); height: 72px; margin: 18px auto 0; padding: 0 17px 0 20px; color: white; border: 1px solid rgba(255,255,255,.11); border-radius: 22px; background: linear-gradient(100deg, rgba(8,24,44,.84), rgba(11,31,53,.7)); box-shadow: 0 20px 60px rgba(0,0,0,.2); backdrop-filter: blur(24px) saturate(130%); }
-.site-header .brand { color: white; }
+.site-header .brand { flex-shrink: 0; }
 .site-header nav { gap: 8px; color: rgba(229,236,242,.7); }
 .site-header nav a { padding: 9px 13px; border-radius: 999px; }
 .site-header nav a:hover { color: white; background: rgba(255,255,255,.07); }
@@ -89,7 +101,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .hero-panel { width: 520px; height: 365px; color: white; border-color: rgba(179,211,231,.17); border-radius: 24px; background: linear-gradient(135deg, rgba(13,37,62,.94), rgba(6,20,36,.96)); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 42px 90px rgba(0,0,0,.38), 0 0 70px rgba(38,120,170,.12); transform: perspective(1200px) rotateY(-7deg) rotateX(2deg); backdrop-filter: blur(18px); }
 .panel-scan { position: absolute; z-index: 3; left: 57px; right: 0; height: 78px; pointer-events: none; background: linear-gradient(transparent, rgba(63,158,210,.055), rgba(212,175,55,.08), transparent); animation: future-scan 5.6s linear infinite; }
 .mini-sidebar { background: linear-gradient(180deg, rgba(3,12,23,.95), rgba(7,21,37,.9)); border-right: 1px solid rgba(255,255,255,.07); }
-.mini-logo { color: #081426; background: linear-gradient(145deg, #f3dc87, #c79922); box-shadow: 0 0 23px rgba(212,175,55,.22); }
+.mini-logo { border: 1px solid rgba(241,214,122,.32); background: rgba(255,255,255,.95); box-shadow: 0 0 23px rgba(212,175,55,.22); }
 .mini-sidebar i { background: rgba(255,255,255,.13); }
 .mini-sidebar i:nth-of-type(1) { background: var(--future-gold-2); box-shadow: 0 0 9px rgba(241,214,122,.38); }
 .panel-main { position: relative; padding: 25px 28px; }
@@ -400,7 +412,9 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 @media (max-width: 680px) {
   .site-header { width: calc(100% - 24px); height: 64px; margin-top: 10px; border-radius: 18px; }
   .site-header .primary-button.small { padding: 10px 13px; }
-  .brand { font-size: 18px; }
+  .site-header .brand { gap: 8px; padding: 5px 8px 5px 6px; border-radius: 13px; }
+  .site-header .brand-symbol { width: 32px; height: 32px; flex-basis: 32px; }
+  .site-header .brand-wordmark { width: 119px; }
   .hero { min-height: auto; padding: 70px 20px 78px; }
   .hero h1 { font-size: clamp(44px, 13vw, 58px); letter-spacing: -.06em; }
   .hero-copy > p { font-size: 15px; }
@@ -423,6 +437,10 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
   .mobile-app-nav button { color: rgba(205,219,229,.55); border-radius: 14px; }
   .mobile-app-nav button.active { color: #fff1b9; background: linear-gradient(145deg, rgba(212,175,55,.17), rgba(38,110,153,.13)); }
   .nx-wizard__intro { margin: -20px -20px 22px; padding: 23px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-animate .brand-symbol, .brand-animate .brand-symbol::after { animation: none; }
 }
 
 /* ==========================================================================

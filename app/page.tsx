@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import NeedsAnalysisView from "./components/analysis/NeedsAnalysisView";
 
 type View = "inicio" | "prospectos" | "crm" | "agenda" | "campanas" | "analisis" | "calculadoras" | "reportes" | "base";
@@ -37,8 +38,19 @@ const calculators = [
   ["Conversión Roth", "Comparación educativa de escenarios fiscales"],
 ];
 
-function Logo({ light = false }: { light?: boolean }) {
-  return <div className={`brand ${light ? "brand-light" : ""}`} aria-label="NexoÁureo"><span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span><span>Nexo<span>Áureo</span></span></div>;
+function Logo({ light = false, animate = false, compact = false }: { light?: boolean; animate?: boolean; compact?: boolean }) {
+  return (
+    <div
+      className={`brand brand-official${light ? " brand-light" : ""}${animate ? " brand-animate" : ""}${compact ? " brand-compact" : ""}`}
+      role="img"
+      aria-label="NexoÁureo"
+    >
+      <span className="brand-symbol" aria-hidden="true">
+        <Image src="/brand/nexoaureo-mark.png" alt="" width={352} height={350} priority={animate} />
+      </span>
+      {!compact && <Image className="brand-wordmark" src="/brand/nexoaureo-wordmark.png" alt="" width={1300} height={225} priority={animate} />}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -175,7 +187,7 @@ export default function Home() {
 
   return <main className="site-shell">
     <FutureBackdrop variant="site" />
-    <header className="site-header"><Logo /><nav aria-label="Navegación principal"><a href="#plataforma">Plataforma</a><a href="#herramientas">Herramientas</a><a href="#metodo">Método</a><a href="#seguridad">Seguridad</a></nav><div className="nav-actions"><button className="text-button" onClick={() => openPrivateSpace("inicio")}>{auth.status === "authorized" ? "Continuar sesión" : "Iniciar sesión"}</button><button className="primary-button small" onClick={() => openPrivateSpace("inicio")}>Comenzar</button></div></header>
+    <header className="site-header"><Logo animate /><nav aria-label="Navegación principal"><a href="#plataforma">Plataforma</a><a href="#herramientas">Herramientas</a><a href="#metodo">Método</a><a href="#seguridad">Seguridad</a></nav><div className="nav-actions"><button className="text-button" onClick={() => openPrivateSpace("inicio")}>{auth.status === "authorized" ? "Continuar sesión" : "Iniciar sesión"}</button><button className="primary-button small" onClick={() => openPrivateSpace("inicio")}>Comenzar</button></div></header>
     <section className="hero">
       <div className="hero-copy"><div className="eyebrow"><span /> Inteligencia verificable · nueva generación</div><h1>De una conversación a una <em>dirección inteligente.</em></h1><p>NexoÁureo escucha, estructura y contrasta situaciones familiares con reglas visibles para orientar el próximo paso sin sustituir el criterio profesional.</p><div className="hero-actions"><button className="primary-button" onClick={() => openPrivateSpace("inicio")}>Entrar al núcleo <span>→</span></button><a className="secondary-button" href="#plataforma"><span>▶</span> Descubrir el sistema</a></div><div className="trust-line"><span>✓ Revisión humana</span><span>✓ Privacidad por diseño</span><span>✓ Español de principio a fin</span></div></div>
       <HeroPanel />
@@ -183,7 +195,7 @@ export default function Home() {
     <section className="metrics" aria-label="Resumen de capacidades"><div><strong>5</strong><span>etapas verificables</span></div><div><strong>2</strong><span>motores coordinados</span></div><div><strong>1</strong><span>laboratorio privado</span></div><div><strong>100%</strong><span>experiencia en español</span></div></section>
     <section className="section light-section" id="plataforma"><SectionTitle eyebrow="UNA SOLA VISIÓN" title="De la primera conversación al próximo paso" text="Un flujo coherente para descubrir necesidades, explicar escenarios y acompañar decisiones importantes." /><div className="feature-grid">{features.map((feature) => <article className="feature-card" key={feature.title}><span className="feature-icon">{feature.icon}</span><h3>{feature.title}</h3><p>{feature.text}</p><ul>{feature.points.map((point) => <li key={point}>✓ {point}</li>)}</ul></article>)}</div></section>
     <section className="section tools-section" id="herramientas"><div className="tools-heading"><SectionTitle eyebrow="HERRAMIENTAS CON PROPÓSITO" title="Calcula menos. Comprende más." text="Cada herramienta convierte variables complejas en una conversación clara y visual." align="left" /><button className="secondary-button dark" onClick={() => openPrivateSpace("calculadoras")}>Abrir calculadoras →</button></div><div className="calculator-grid">{calculators.map(([title, text], index) => <button className="calculator-card" key={title} onClick={() => openPrivateSpace("calculadoras")}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{title}</strong><small>{text}</small></div><b>↗</b></button>)}</div></section>
-    <section className="section method-section" id="metodo"><div className="method-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core-mark"><Logo light /><small>Visión integral</small></div><div className="orbit-note note-one"><b>01</b> Descubrir</div><div className="orbit-note note-two"><b>02</b> Analizar</div><div className="orbit-note note-three"><b>03</b> Acompañar</div></div><div className="method-copy"><span className="eyebrow-dark gold">UN MÉTODO HUMANO</span><h2>Los números importan.<br />La historia detrás de ellos, más.</h2><p>NexoÁureo organiza la información sin convertir a la familia en una hoja de cálculo. Cada orientación comienza con objetivos, prioridades y capacidad real.</p><div className="method-list"><div><b>01</b><span><strong>Descubre</strong><small>Haz las preguntas correctas y escucha antes de calcular.</small></span></div><div><b>02</b><span><strong>Modela escenarios</strong><small>Compara caminos con supuestos visibles y ajustables.</small></span></div><div><b>03</b><span><strong>Define el siguiente paso</strong><small>Convierte el análisis en acciones concretas y medibles.</small></span></div></div></div></section>
+    <section className="section method-section" id="metodo"><div className="method-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core-mark"><Logo light compact /><small>Visión integral</small></div><div className="orbit-note note-one"><b>01</b> Descubrir</div><div className="orbit-note note-two"><b>02</b> Analizar</div><div className="orbit-note note-three"><b>03</b> Acompañar</div></div><div className="method-copy"><span className="eyebrow-dark gold">UN MÉTODO HUMANO</span><h2>Los números importan.<br />La historia detrás de ellos, más.</h2><p>NexoÁureo organiza la información sin convertir a la familia en una hoja de cálculo. Cada orientación comienza con objetivos, prioridades y capacidad real.</p><div className="method-list"><div><b>01</b><span><strong>Descubre</strong><small>Haz las preguntas correctas y escucha antes de calcular.</small></span></div><div><b>02</b><span><strong>Modela escenarios</strong><small>Compara caminos con supuestos visibles y ajustables.</small></span></div><div><b>03</b><span><strong>Define el siguiente paso</strong><small>Convierte el análisis en acciones concretas y medibles.</small></span></div></div></div></section>
     <section className="security-strip" id="seguridad"><div><span className="shield">◇</span><p><small>DISEÑADA CON RESPONSABILIDAD</small><strong>Una experiencia clara para información importante</strong></p></div><div className="security-items"><span>◉ Acceso protegido</span><span>⌁ Privacidad por diseño</span><span>✓ Controles de sesión</span></div></section>
     <section className="closing-section"><div className="closing-orb" /><span className="eyebrow-dark gold">TU PRÓXIMA CONVERSACIÓN EMPIEZA AQUÍ</span><h2>Planificar el futuro puede sentirse más claro.</h2><p>Abre tu espacio profesional privado y acompaña decisiones financieras con un método verificable.</p><button className="primary-button gold-button" onClick={() => openPrivateSpace("inicio")}>Entrar al espacio privado →</button></section>
     <footer><Logo light /><p>Herramientas educativas para profesionales financieros.</p><div><a href="#plataforma">Plataforma</a><a href="#seguridad">Privacidad</a><span>© 2026 NexoÁureo</span></div></footer>
@@ -200,7 +212,7 @@ function FutureBackdrop({ variant }: { variant: "site" | "app" }) {
 }
 
 function HeroPanel() {
-  return <div className="hero-panel-wrap"><div className="hero-glow" /><div className="hero-orbit" /><div className="hero-panel"><div className="panel-scan" /><div className="mini-sidebar"><span className="mini-logo">N</span><i /><i /><i /><i /><b /></div><div className="panel-main"><div className="panel-top"><div><small>RESUMEN DEL CLIENTE</small><strong>Familia Rivera</strong></div><em className="panel-live"><i /> MOTOR ACTIVO</em><span>WP</span></div><div className="health-card"><div><small>ÍNDICE DE PREPARACIÓN</small><strong>82</strong><span>de 100</span></div><div className="score-ring"><b>82%</b></div></div><div className="panel-stats"><div><small>Protección</small><strong>74%</strong><i style={{ width: "74%" }} /></div><div><small>Retiro</small><strong>68%</strong><i style={{ width: "68%" }} /></div></div><div className="opportunity-card"><span>✦</span><div><small>PRÓXIMA PRIORIDAD</small><strong>Fortalecer el fondo de emergencia</strong></div><b>→</b></div></div></div><div className="floating-card float-one"><span>✓</span><div><small>Análisis completado</small><strong>12 de 12 etapas</strong></div></div><div className="floating-card float-two"><span>↗</span><div><small>Meta proyectada</small><strong>$1.28 M</strong></div></div></div>;
+  return <div className="hero-panel-wrap"><div className="hero-glow" /><div className="hero-orbit" /><div className="hero-panel"><div className="panel-scan" /><div className="mini-sidebar"><span className="mini-logo" aria-hidden="true"><Image src="/brand/nexoaureo-mark.png" alt="" width={352} height={350} /></span><i /><i /><i /><i /><b /></div><div className="panel-main"><div className="panel-top"><div><small>RESUMEN DEL CLIENTE</small><strong>Familia Rivera</strong></div><em className="panel-live"><i /> MOTOR ACTIVO</em><span>WP</span></div><div className="health-card"><div><small>ÍNDICE DE PREPARACIÓN</small><strong>82</strong><span>de 100</span></div><div className="score-ring"><b>82%</b></div></div><div className="panel-stats"><div><small>Protección</small><strong>74%</strong><i style={{ width: "74%" }} /></div><div><small>Retiro</small><strong>68%</strong><i style={{ width: "68%" }} /></div></div><div className="opportunity-card"><span>✦</span><div><small>PRÓXIMA PRIORIDAD</small><strong>Fortalecer el fondo de emergencia</strong></div><b>→</b></div></div></div><div className="floating-card float-one"><span>✓</span><div><small>Análisis completado</small><strong>12 de 12 etapas</strong></div></div><div className="floating-card float-two"><span>↗</span><div><small>Meta proyectada</small><strong>$1.28 M</strong></div></div></div>;
 }
 
 function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) {
