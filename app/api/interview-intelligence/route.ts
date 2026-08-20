@@ -9,6 +9,7 @@ import {
   type NarrativeAnalysis,
   type NarrativeInsight,
 } from "../../../lib/interview-intelligence";
+import { authorizeMutation, authorizeRequest } from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -221,7 +222,10 @@ async function analyzeWithOpenAI(narrative: string, snapshot: Record<string, unk
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authorization = authorizeRequest(request);
+  if (!authorization.ok) return authorization.response;
+
   return Response.json({
     externalAiAvailable: Boolean(runtime().OPENAI_API_KEY),
     version: INTERVIEW_INTELLIGENCE_VERSION,
@@ -229,6 +233,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authorization = authorizeMutation(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     const raw = await request.text();
     if (raw.length > 20_000) return Response.json({ error: "La solicitud es demasiado extensa." }, { status: 413, headers: noStoreHeaders });

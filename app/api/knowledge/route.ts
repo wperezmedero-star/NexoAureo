@@ -1,8 +1,12 @@
 import { getKnowledgeBase } from "../../../lib/knowledge-base";
+import { authorizeRequest } from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authorization = authorizeRequest(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     return Response.json(await getKnowledgeBase());
   } catch (error) {

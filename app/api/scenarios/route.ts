@@ -1,5 +1,6 @@
 import { analyzeAssessment, ENGINE_VERSION } from "../../../lib/decision-engine";
 import { FACT_FINDER_VERSION, normalizeAssessmentPayload, validateAssessment } from "../../../lib/fact-finder";
+import { authorizeMutation } from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ function recordValue(value: unknown): Record<string, unknown> | null {
 }
 
 export async function POST(request: Request) {
+  const authorization = authorizeMutation(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     const raw = await request.text();
     if (raw.length > 60_000) return Response.json({ error: "La simulación es demasiado extensa." }, { status: 413, headers: noStoreHeaders });

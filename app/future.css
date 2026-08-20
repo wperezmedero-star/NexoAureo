@@ -360,6 +360,11 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 .modal-close:hover { color: var(--future-navy); background: rgba(212,175,55,.14); }
 .login-modal input:focus { border-color: rgba(212,175,55,.65); box-shadow: 0 0 0 3px rgba(212,175,55,.1); }
 .demo-note { color: #8593a1; }
+.secure-access-icon { color: var(--future-gold); border-color: rgba(212,175,55,.26); background: linear-gradient(145deg, #fffaf0, #f3ead4); box-shadow: 0 15px 35px rgba(87,63,13,.12); }
+.secure-access-points { border-color: rgba(9,32,54,.09); background: linear-gradient(145deg, #f9fbfc, #f3f7f8); color: #496172; }
+.access-alert { border-color: rgba(178,79,62,.19); color: #8d4034; background: rgba(255,244,241,.92); }
+.logout-button { border-color: rgba(9,32,54,.09); color: #607486; background: rgba(255,255,255,.72); }
+.logout-button:hover { color: var(--future-navy); border-color: rgba(212,175,55,.35); background: rgba(255,251,241,.95); }
 
 /* Calculadoras: nota informativa */
 .calc-tip { color: #4c6270; background: rgba(29,95,141,.08); border: 1px solid rgba(29,95,141,.12); }

@@ -5,12 +5,9 @@ import { summarizeAssessmentResult } from "../../../lib/assessment-summary";
 import { analyzeAssessment, ENGINE_VERSION } from "../../../lib/decision-engine";
 import { FACT_FINDER_VERSION, normalizeAssessmentPayload, validateAssessment } from "../../../lib/fact-finder";
 import { getKnowledgeBase, KNOWLEDGE_VERSION } from "../../../lib/knowledge-base";
+import { authorizeMutation, authorizeRequest } from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
-
-function ownerFrom(request: Request) {
-  return request.headers.get("oai-authenticated-user-email") || "vista-previa@nexoaureo.local";
-}
 
 function parseJson<T>(value: string): T | null {
   try {
@@ -21,6 +18,10 @@ function parseJson<T>(value: string): T | null {
 }
 
 export async function GET(request: Request) {
+  const authorization = authorizeRequest(request);
+  if (!authorization.ok) return authorization.response;
+  const ownerEmail = authorization.user.email;
+
   try {
     await ensureDatabaseSchema();
     const db = getDb();
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
         sourceVersion: assessments.sourceVersion,
         createdAt: assessments.createdAt,
         updatedAt: assessments.updatedAt,
-      }).from(assessments).where(and(eq(assessments.id, assessmentId), eq(assessments.ownerEmail, ownerFrom(request)))).limit(1);
+      }).from(assessments).where(and(eq(assessments.id, assessmentId), eq(assessments.ownerEmail, ownerEmail))).limit(1);
       if (!row) return Response.json({ error: "Análisis no encontrado." }, { status: 404 });
 
       const events = await db.select({ action: auditEvents.action, detailsJson: auditEvents.detailsJson, createdAt: auditEvents.createdAt })
@@ -76,7 +77,7 @@ export async function GET(request: Request) {
       createdAt: assessments.createdAt,
       updatedAt: assessments.updatedAt,
     })
-      .from(assessments).where(eq(assessments.ownerEmail, ownerFrom(request))).orderBy(desc(assessments.createdAt)).limit(12);
+      .from(assessments).where(eq(assessments.ownerEmail, ownerEmail)).orderBy(desc(assessments.createdAt)).limit(12);
     return Response.json({
       assessments: rows.map(({ resultJson, ...row }) => ({
         ...row,
@@ -90,6 +91,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authorization = authorizeMutation(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     const payload = (await request.json()) as Record<string, unknown>;
     const input = normalizeAssessmentPayload(payload);
@@ -103,9 +107,10 @@ export async function POST(request: Request) {
     const evidence = knowledge.sources.filter((source) => usedSourceIds.has(source.id));
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    await ensureDatabaseSchema();
     const db = getDb();
     await db.batch([
-      db.insert(assessments).values({ id, ownerEmail: ownerFrom(request), applicantReference: input.applicantReference, jurisdiction: "Florida", goal: input.goal, status: result.status, inputJson: JSON.stringify(input), resultJson: JSON.stringify(result), sourceVersion: KNOWLEDGE_VERSION, createdAt: now, updatedAt: now }),
+      db.insert(assessments).values({ id, ownerEmail: authorization.user.email, applicantReference: input.applicantReference, jurisdiction: "Florida", goal: input.goal, status: result.status, inputJson: JSON.stringify(input), resultJson: JSON.stringify(result), sourceVersion: KNOWLEDGE_VERSION, createdAt: now, updatedAt: now }),
       db.insert(auditEvents).values({
         id: crypto.randomUUID(),
         assessmentId: id,

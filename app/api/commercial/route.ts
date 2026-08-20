@@ -1,17 +1,13 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { appointments, campaigns, followUpTasks, prospects } from "../../../db/schema";
 import { ensureDatabaseSchema, getDb } from "../../../db";
+import { authorizeMutation, authorizeRequest } from "../../../lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const CONSENT_VERSION = "contacto-educativo-v1-2026-08-19";
-const PREVIEW_OWNER = "vista-previa@nexoaureo.local";
 const leadStatuses = new Set(["nuevo", "contactado", "cita", "entrevista", "seguimiento", "cliente", "no_continuar"]);
 const interests = new Set(["vida", "salud", "retiro", "gastos_finales", "educacion", "general"]);
-
-function ownerFrom(request: Request) {
-  return request.headers.get("oai-authenticated-user-email") || PREVIEW_OWNER;
-}
 
 function clean(value: unknown, limit: number) {
   return String(value ?? "").trim().replace(/\s+/g, " ").slice(0, limit);
@@ -36,36 +32,6 @@ function maskContact(value: string) {
   }
   const digits = value.replace(/\D/g, "");
   return digits.length >= 4 ? `••• ••• ${digits.slice(-4)}` : "Contacto protegido";
-}
-
-function isoIn(days: number, hour: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  date.setHours(hour, 0, 0, 0);
-  return date.toISOString();
-}
-
-async function ensurePreviewData(ownerEmail: string) {
-  if (ownerEmail !== PREVIEW_OWNER) return;
-  const db = getDb();
-  const existing = await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.ownerEmail, ownerEmail)).limit(1);
-  if (existing.length) return;
-  const now = new Date().toISOString();
-  const p1 = crypto.randomUUID();
-  const p2 = crypto.randomUUID();
-  const p3 = crypto.randomUUID();
-  await db.batch([
-    db.insert(prospects).values({ id: p1, ownerEmail, fullName: "Demostración · Familia Solís", preferredLanguage: "es", preferredChannel: "telefono", contactValue: "3055550148", interest: "vida", source: "Web educativa", status: "nuevo", consentVersion: CONSENT_VERSION, consentAt: now, notes: "Desea preparar preguntas sobre protección familiar.", nextActionAt: isoIn(0, 16), createdAt: now, updatedAt: now }),
-    db.insert(prospects).values({ id: p2, ownerEmail, fullName: "Demostración · Elena Cruz", preferredLanguage: "es", preferredChannel: "correo", contactValue: "elena.demo@example.com", interest: "salud", source: "Recomendación", status: "cita", consentVersion: CONSENT_VERSION, consentAt: now, notes: "Solicitó una conversación educativa.", nextActionAt: isoIn(1, 18), createdAt: now, updatedAt: now }),
-    db.insert(prospects).values({ id: p3, ownerEmail, fullName: "Demostración · Roberto León", preferredLanguage: "en", preferredChannel: "correo", contactValue: "roberto.demo@example.com", interest: "retiro", source: "Código QR", status: "seguimiento", consentVersion: CONSENT_VERSION, consentAt: now, notes: "Pendiente de segunda conversación.", nextActionAt: isoIn(3, 11), createdAt: now, updatedAt: now }),
-    db.insert(followUpTasks).values({ id: crypto.randomUUID(), ownerEmail, prospectId: p1, title: "Confirmar interés y mejor horario", dueAt: isoIn(0, 16), priority: "alta", status: "pendiente", createdAt: now, updatedAt: now }),
-    db.insert(followUpTasks).values({ id: crypto.randomUUID(), ownerEmail, prospectId: p2, title: "Preparar preguntas para la cita", dueAt: isoIn(1, 12), priority: "normal", status: "pendiente", createdAt: now, updatedAt: now }),
-    db.insert(followUpTasks).values({ id: crypto.randomUUID(), ownerEmail, prospectId: p3, title: "Revisar próximo paso acordado", dueAt: isoIn(3, 10), priority: "normal", status: "pendiente", createdAt: now, updatedAt: now }),
-    db.insert(appointments).values({ id: crypto.randomUUID(), ownerEmail, prospectId: p2, attendeeReference: "Elena C.", startsAt: isoIn(1, 18), durationMinutes: 30, mode: "videollamada", status: "programada", reminderStatus: "borrador", notes: "Conversación educativa; no cotización.", createdAt: now, updatedAt: now }),
-    db.insert(appointments).values({ id: crypto.randomUUID(), ownerEmail, prospectId: p3, attendeeReference: "Roberto L.", startsAt: isoIn(3, 11), durationMinutes: 30, mode: "telefono", status: "programada", reminderStatus: "borrador", notes: "Seguimiento general.", createdAt: now, updatedAt: now }),
-    db.insert(campaigns).values({ id: crypto.randomUUID(), ownerEmail, name: "Protección familiar · bienvenida", topic: "vida", audience: "Interés en protección familiar", channel: "correo", status: "borrador", subject: "Tres preguntas para preparar nuestra conversación", content: "Gracias por solicitar información educativa. Estas preguntas pueden ayudarte a organizar tus prioridades familiares antes de conversar.", disclaimer: "Contenido educativo. No constituye cotización, solicitud ni recomendación de un producto.", createdAt: now, updatedAt: now }),
-    db.insert(campaigns).values({ id: crypto.randomUUID(), ownerEmail, name: "Preparación para retiro", topic: "retiro", audience: "Interés en planificación de retiro", channel: "correo", status: "borrador", subject: "Una guía breve para ordenar tus metas de retiro", content: "Antes de comparar alternativas conviene conocer el horizonte, la liquidez necesaria y la capacidad sostenible de ahorro.", disclaimer: "Contenido educativo. No constituye asesoramiento financiero ni promesa de resultados.", createdAt: now, updatedAt: now }),
-  ]);
 }
 
 async function loadOverview(ownerEmail: string) {
@@ -98,10 +64,12 @@ async function loadOverview(ownerEmail: string) {
 }
 
 export async function GET(request: Request) {
+  const authorization = authorizeRequest(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     await ensureDatabaseSchema();
-    const ownerEmail = ownerFrom(request);
-    await ensurePreviewData(ownerEmail);
+    const ownerEmail = authorization.user.email;
     return Response.json(await loadOverview(ownerEmail));
   } catch (error) {
     const message = error instanceof Error ? error.message : "No fue posible consultar el espacio comercial.";
@@ -110,9 +78,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const authorization = authorizeMutation(request);
+  if (!authorization.ok) return authorization.response;
+
   try {
     await ensureDatabaseSchema();
-    const ownerEmail = ownerFrom(request);
+    const ownerEmail = authorization.user.email;
     const body = (await request.json()) as Record<string, unknown>;
     const action = clean(body.action, 40);
     const now = new Date().toISOString();

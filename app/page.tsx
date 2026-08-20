@@ -4,6 +4,23 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import NeedsAnalysisView from "./components/analysis/NeedsAnalysisView";
 
 type View = "inicio" | "prospectos" | "crm" | "agenda" | "campanas" | "analisis" | "calculadoras" | "reportes" | "base";
+type AuthorizedProfile = { displayName: string; initials: string };
+type AuthState =
+  | { status: "checking" | "guest"; user?: undefined; message?: undefined }
+  | { status: "authorized"; user: AuthorizedProfile; message?: undefined }
+  | { status: "denied" | "error"; user?: undefined; message: string };
+
+const privateViews = new Set<View>([
+  "inicio",
+  "prospectos",
+  "crm",
+  "agenda",
+  "campanas",
+  "analisis",
+  "calculadoras",
+  "reportes",
+  "base",
+]);
 
 const features = [
   { icon: "✦", title: "Entrevista inteligente guiada", text: "Escucha el relato, extrae únicamente hechos explícitos y propone la próxima pregunta sin decidir por el agente.", points: ["Dictado en español", "Revisión humana", "Preguntas adaptativas"] },
@@ -28,11 +45,96 @@ export default function Home() {
   const [mode, setMode] = useState<"landing" | "app">("landing");
   const [modal, setModal] = useState(false);
   const [view, setView] = useState<View>("inicio");
+  const [pendingView, setPendingView] = useState<View>("inicio");
+  const [auth, setAuth] = useState<AuthState>({ status: "checking" });
   const [income, setIncome] = useState(6200);
   const [expenses, setExpenses] = useState(4100);
   const [years, setYears] = useState(22);
   const projection = useMemo(() => { const monthly = Math.max(0, income - expenses); return { monthly, future: monthly * 12 * years * 1.42 }; }, [income, expenses, years]);
-  const enterDemo = (event?: FormEvent) => { event?.preventDefault(); setModal(false); setMode("app"); setView("inicio"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams(window.location.search);
+    const wantsApp = params.get("app") === "1";
+    const requestedView = params.get("view") as View | null;
+
+    fetch("/api/auth/session", {
+      cache: "no-store",
+      credentials: "include",
+    })
+      .then(async (response) => {
+        const body = await response.json() as {
+          authenticated?: boolean;
+          user?: AuthorizedProfile;
+          error?: string;
+        };
+        if (!active) return;
+
+        if (response.ok && body.authenticated && body.user) {
+          setAuth({ status: "authorized", user: body.user });
+          if (wantsApp) {
+            const nextView = requestedView && privateViews.has(requestedView)
+              ? requestedView
+              : "inicio";
+            setView(nextView);
+            setMode("app");
+            window.scrollTo({ top: 0 });
+          }
+          return;
+        }
+
+        if (response.status === 401) {
+          setAuth({ status: "guest" });
+        } else if (response.status === 403) {
+          setAuth({
+            status: "denied",
+            message: body.error || "Esta cuenta no está autorizada.",
+          });
+        } else {
+          setAuth({
+            status: "error",
+            message: body.error || "El acceso privado no está disponible.",
+          });
+        }
+        if (wantsApp) setModal(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setAuth({
+          status: "error",
+          message: "No fue posible verificar la sesión. Inténtalo de nuevo.",
+        });
+        if (wantsApp) setModal(true);
+      })
+      .finally(() => {
+        if (!active || !wantsApp) return;
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("app");
+        cleanUrl.searchParams.delete("view");
+        window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  const openPrivateSpace = (target: View = "inicio") => {
+    setPendingView(target);
+    if (auth.status === "authorized") {
+      setModal(false);
+      setMode("app");
+      setView(target);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setModal(true);
+  };
+
+  const signInReturnTo = `/?app=1&view=${pendingView}`;
+  const signInHref = `/signin-with-chatgpt?return_to=${encodeURIComponent(signInReturnTo)}`;
+  const signedInUser = auth.status === "authorized"
+    ? auth.user
+    : { displayName: "Usuario autorizado", initials: "NA" };
+  const firstName = signedInUser.displayName.split(/\s+/)[0] || "William";
 
   if (mode === "app") {
     return <main className="app-shell">
@@ -54,7 +156,7 @@ export default function Home() {
         <button className="back-site" onClick={() => setMode("landing")}>← Volver al sitio</button>
       </aside>
       <section className="app-main">
-        <header className="app-header"><div><span className="eyebrow-dark">Licencia 2-15 emitida · nombramiento pendiente</span><h1>{viewTitles[view]}</h1></div><div className="header-actions"><div className="system-status"><i /> Motor híbrido activo</div><button className="icon-button" aria-label="Notificaciones">◌<b>3</b></button><div className="user-chip"><span>WP</span><div><strong>William Pérez</strong><small>Agente licenciado</small></div></div></div></header>
+        <header className="app-header"><div><span className="eyebrow-dark">Licencia 2-15 emitida · nombramiento pendiente</span><h1>{view === "inicio" ? `Buenos días, ${firstName}` : viewTitles[view]}</h1></div><div className="header-actions"><div className="system-status"><i /> Sesión segura · motor activo</div><button className="icon-button" aria-label="Notificaciones">◌<b>3</b></button><div className="user-chip"><span>{signedInUser.initials}</span><div><strong>{signedInUser.displayName}</strong><small>Cuenta autorizada</small></div></div><a className="logout-button" href="/signout-with-chatgpt?return_to=%2F">Cerrar sesión</a></div></header>
         <div className="app-content">
           {view === "inicio" && <Dashboard onNavigate={setView} />}
           {view === "prospectos" && <Prospects />}
@@ -73,23 +175,23 @@ export default function Home() {
 
   return <main className="site-shell">
     <FutureBackdrop variant="site" />
-    <header className="site-header"><Logo /><nav aria-label="Navegación principal"><a href="#plataforma">Plataforma</a><a href="#herramientas">Herramientas</a><a href="#metodo">Método</a><a href="#seguridad">Seguridad</a></nav><div className="nav-actions"><button className="text-button" onClick={() => setModal(true)}>Iniciar sesión</button><button className="primary-button small" onClick={() => setModal(true)}>Comenzar</button></div></header>
+    <header className="site-header"><Logo /><nav aria-label="Navegación principal"><a href="#plataforma">Plataforma</a><a href="#herramientas">Herramientas</a><a href="#metodo">Método</a><a href="#seguridad">Seguridad</a></nav><div className="nav-actions"><button className="text-button" onClick={() => openPrivateSpace("inicio")}>{auth.status === "authorized" ? "Continuar sesión" : "Iniciar sesión"}</button><button className="primary-button small" onClick={() => openPrivateSpace("inicio")}>Comenzar</button></div></header>
     <section className="hero">
-      <div className="hero-copy"><div className="eyebrow"><span /> Inteligencia verificable · nueva generación</div><h1>De una conversación a una <em>dirección inteligente.</em></h1><p>NexoÁureo escucha, estructura y contrasta situaciones familiares con reglas visibles para orientar el próximo paso sin sustituir el criterio profesional.</p><div className="hero-actions"><button className="primary-button" onClick={() => enterDemo()}>Entrar al núcleo <span>→</span></button><a className="secondary-button" href="#plataforma"><span>▶</span> Descubrir el sistema</a></div><div className="trust-line"><span>✓ Revisión humana</span><span>✓ Privacidad por diseño</span><span>✓ Español de principio a fin</span></div></div>
+      <div className="hero-copy"><div className="eyebrow"><span /> Inteligencia verificable · nueva generación</div><h1>De una conversación a una <em>dirección inteligente.</em></h1><p>NexoÁureo escucha, estructura y contrasta situaciones familiares con reglas visibles para orientar el próximo paso sin sustituir el criterio profesional.</p><div className="hero-actions"><button className="primary-button" onClick={() => openPrivateSpace("inicio")}>Entrar al núcleo <span>→</span></button><a className="secondary-button" href="#plataforma"><span>▶</span> Descubrir el sistema</a></div><div className="trust-line"><span>✓ Revisión humana</span><span>✓ Privacidad por diseño</span><span>✓ Español de principio a fin</span></div></div>
       <HeroPanel />
     </section>
     <section className="metrics" aria-label="Resumen de capacidades"><div><strong>5</strong><span>etapas verificables</span></div><div><strong>2</strong><span>motores coordinados</span></div><div><strong>1</strong><span>laboratorio privado</span></div><div><strong>100%</strong><span>experiencia en español</span></div></section>
     <section className="section light-section" id="plataforma"><SectionTitle eyebrow="UNA SOLA VISIÓN" title="De la primera conversación al próximo paso" text="Un flujo coherente para descubrir necesidades, explicar escenarios y acompañar decisiones importantes." /><div className="feature-grid">{features.map((feature) => <article className="feature-card" key={feature.title}><span className="feature-icon">{feature.icon}</span><h3>{feature.title}</h3><p>{feature.text}</p><ul>{feature.points.map((point) => <li key={point}>✓ {point}</li>)}</ul></article>)}</div></section>
-    <section className="section tools-section" id="herramientas"><div className="tools-heading"><SectionTitle eyebrow="HERRAMIENTAS CON PROPÓSITO" title="Calcula menos. Comprende más." text="Cada herramienta convierte variables complejas en una conversación clara y visual." align="left" /><button className="secondary-button dark" onClick={() => { setMode("app"); setView("calculadoras"); }}>Probar calculadora →</button></div><div className="calculator-grid">{calculators.map(([title, text], index) => <button className="calculator-card" key={title} onClick={() => { setMode("app"); setView("calculadoras"); }}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{title}</strong><small>{text}</small></div><b>↗</b></button>)}</div></section>
+    <section className="section tools-section" id="herramientas"><div className="tools-heading"><SectionTitle eyebrow="HERRAMIENTAS CON PROPÓSITO" title="Calcula menos. Comprende más." text="Cada herramienta convierte variables complejas en una conversación clara y visual." align="left" /><button className="secondary-button dark" onClick={() => openPrivateSpace("calculadoras")}>Abrir calculadoras →</button></div><div className="calculator-grid">{calculators.map(([title, text], index) => <button className="calculator-card" key={title} onClick={() => openPrivateSpace("calculadoras")}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{title}</strong><small>{text}</small></div><b>↗</b></button>)}</div></section>
     <section className="section method-section" id="metodo"><div className="method-visual"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="core-mark"><Logo light /><small>Visión integral</small></div><div className="orbit-note note-one"><b>01</b> Descubrir</div><div className="orbit-note note-two"><b>02</b> Analizar</div><div className="orbit-note note-three"><b>03</b> Acompañar</div></div><div className="method-copy"><span className="eyebrow-dark gold">UN MÉTODO HUMANO</span><h2>Los números importan.<br />La historia detrás de ellos, más.</h2><p>NexoÁureo organiza la información sin convertir a la familia en una hoja de cálculo. Cada orientación comienza con objetivos, prioridades y capacidad real.</p><div className="method-list"><div><b>01</b><span><strong>Descubre</strong><small>Haz las preguntas correctas y escucha antes de calcular.</small></span></div><div><b>02</b><span><strong>Modela escenarios</strong><small>Compara caminos con supuestos visibles y ajustables.</small></span></div><div><b>03</b><span><strong>Define el siguiente paso</strong><small>Convierte el análisis en acciones concretas y medibles.</small></span></div></div></div></section>
     <section className="security-strip" id="seguridad"><div><span className="shield">◇</span><p><small>DISEÑADA CON RESPONSABILIDAD</small><strong>Una experiencia clara para información importante</strong></p></div><div className="security-items"><span>◉ Acceso protegido</span><span>⌁ Privacidad por diseño</span><span>✓ Controles de sesión</span></div></section>
-    <section className="closing-section"><div className="closing-orb" /><span className="eyebrow-dark gold">TU PRÓXIMA CONVERSACIÓN EMPIEZA AQUÍ</span><h2>Planificar el futuro puede sentirse más claro.</h2><p>Explora la demostración de NexoÁureo y descubre una nueva manera de acompañar decisiones financieras.</p><button className="primary-button gold-button" onClick={() => enterDemo()}>Entrar a la demostración →</button></section>
+    <section className="closing-section"><div className="closing-orb" /><span className="eyebrow-dark gold">TU PRÓXIMA CONVERSACIÓN EMPIEZA AQUÍ</span><h2>Planificar el futuro puede sentirse más claro.</h2><p>Abre tu espacio profesional privado y acompaña decisiones financieras con un método verificable.</p><button className="primary-button gold-button" onClick={() => openPrivateSpace("inicio")}>Entrar al espacio privado →</button></section>
     <footer><Logo light /><p>Herramientas educativas para profesionales financieros.</p><div><a href="#plataforma">Plataforma</a><a href="#seguridad">Privacidad</a><span>© 2026 NexoÁureo</span></div></footer>
-    {modal && <div className="modal-backdrop" role="presentation" onMouseDown={() => setModal(false)}><div className="login-modal" role="dialog" aria-modal="true" aria-labelledby="access-title" onMouseDown={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={() => setModal(false)}>×</button><Logo /><h2 id="access-title">Acceso protegido</h2><p>Tu identidad se valida mediante el acceso autorizado a esta aplicación.</p><form onSubmit={enterDemo}><button className="primary-button login-submit" type="submit">Entrar al espacio profesional</button></form><small className="demo-note">No introduzcas contraseñas ni datos sensibles de clientes en esta pantalla.</small></div></div>}
+    {modal && <div className="modal-backdrop" role="presentation" onMouseDown={() => setModal(false)}><div className="login-modal secure-login-modal" role="dialog" aria-modal="true" aria-labelledby="access-title" onMouseDown={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Cerrar" onClick={() => setModal(false)}>×</button><Logo /><div className="secure-access-icon" aria-hidden="true">◇</div><h2 id="access-title">Acceso privado de William</h2><p>El sitio informativo permanece público. El CRM, las entrevistas, el historial y las herramientas internas requieren la cuenta autorizada.</p>{(auth.status === "denied" || auth.status === "error") && <div className="access-alert" role="alert">{auth.message}</div>}{auth.status === "authorized" ? <button className="primary-button login-submit secure-login-action" type="button" onClick={() => openPrivateSpace(pendingView)}>Abrir espacio protegido</button> : <a className="primary-button login-submit secure-login-action" href={signInHref}>Continuar con ChatGPT</a>}<div className="secure-access-points"><span>✓ Identidad administrada por la plataforma</span><span>✓ Solo la cuenta autorizada</span><span>✓ API y datos bloqueados en el servidor</span></div><small className="demo-note">NexoÁureo no recibe ni guarda tu contraseña. Safari puede ofrecer Face ID cuando la cuenta dispone de una passkey.</small></div></div>}
   </main>;
 }
 
-const viewTitles: Record<View, string> = { inicio: "Buenos días, William", prospectos: "Captación de prospectos", crm: "CRM y seguimiento", agenda: "Agenda y tareas", campanas: "Campañas educativas", analisis: "Entrevista y dirección", calculadoras: "Calculadoras", reportes: "Reportes", base: "Base verificada" };
+const viewTitles: Record<View, string> = { inicio: "Resumen", prospectos: "Captación de prospectos", crm: "CRM y seguimiento", agenda: "Agenda y tareas", campanas: "Campañas educativas", analisis: "Entrevista y dirección", calculadoras: "Calculadoras", reportes: "Reportes", base: "Base verificada" };
 function SideButton({ active, label, icon, onClick }: { active: boolean; label: string; icon: string; onClick: () => void }) { return <button className={active ? "active" : ""} onClick={onClick}><span>{icon}</span>{label}</button>; }
 function SectionTitle({ eyebrow, title, text, align = "center" }: { eyebrow: string; title: string; text: string; align?: "left" | "center" }) { return <div className={`section-title ${align}`}><span>{eyebrow}</span><h2>{title}</h2><p>{text}</p></div>; }
 

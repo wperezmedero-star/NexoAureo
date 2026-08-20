@@ -1,4 +1,19 @@
-# vinext-starter
+# NexoÁureo
+
+Plataforma InsurTech en español para captación, CRM, agenda, campañas
+educativas y entrevistas guiadas con análisis verificable de necesidades.
+
+## Modelo de acceso
+
+- La presentación pública permanece disponible sin autenticación.
+- El espacio profesional usa el inicio de sesión administrado por Sites.
+- La cuenta propietaria se configura como secreto de producción mediante
+  `NEXOAUREO_OWNER_EMAIL`; nunca se guarda en el repositorio.
+- Todas las API internas validan la identidad autorizada en el servidor.
+- Las operaciones de escritura requieren además un origen coincidente.
+- NexoÁureo no recibe ni almacena contraseñas.
+
+## Arquitectura
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
