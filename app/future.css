@@ -47,17 +47,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .brand-official { padding: 6px 10px 6px 7px; border: 1px solid rgba(9,32,54,.1); border-radius: 15px; background: rgba(255,255,255,.94); box-shadow: 0 9px 28px rgba(3,14,27,.12), inset 0 1px rgba(255,255,255,.72); }
 .brand-light { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.96); box-shadow: 0 12px 32px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.82); }
 .brand-symbol::after { content: ""; position: absolute; inset: 7%; z-index: -1; border-radius: 50%; opacity: 0; background: radial-gradient(circle, rgba(62,199,208,.32), rgba(212,175,55,.2) 45%, transparent 72%); filter: blur(7px); }
-.brand-animate .brand-symbol { transform-origin: center; animation: nexoaureo-circle-return 1.55s cubic-bezier(.22,.78,.2,1) .14s both; will-change: transform; }
-.brand-animate .brand-symbol::after { animation: nexoaureo-logo-glow 1.55s ease-out .14s both; }
+.brand-animate .brand-symbol { transform-origin: center; animation: nexoaureo-circle-return 1.9s cubic-bezier(.22,.78,.2,1) .14s both; will-change: transform, filter; }
+.brand-animate .brand-symbol::after { animation: nexoaureo-logo-glow 1.9s ease-out .14s both; }
 .brand-compact .brand-symbol { width: 62px; height: 62px; flex-basis: 62px; }
 
+/* El emblema se recoge hacia un punto de luz y se despliega de vuelta a
+   su tamaño y posición exactos — no es un simple giro, es una recogida
+   real seguida de un asentamiento con un ligero rebote al final. El
+   brillo (::after, más abajo) alcanza su punto máximo justo cuando el
+   emblema está más contraído (42%), para que ambos efectos coincidan. */
 @keyframes nexoaureo-circle-return {
-  0% { transform: translate3d(0,0,0) rotate(0deg) scale(.92); }
-  12% { transform: translate3d(8px,0,0) rotate(30deg) scale(1.02); }
-  30% { transform: translate3d(0,-9px,0) rotate(108deg) scale(1.06); }
-  50% { transform: translate3d(-9px,0,0) rotate(180deg) scale(1.07); }
-  70% { transform: translate3d(0,9px,0) rotate(252deg) scale(1.05); }
-  88% { transform: translate3d(8px,0,0) rotate(324deg) scale(1.02); }
+  0% { transform: translate3d(0,0,0) rotate(0deg) scale(1); filter: brightness(1); }
+  20% { transform: translate3d(5px,-6px,0) rotate(130deg) scale(.55); filter: brightness(1.1); }
+  42% { transform: translate3d(0,0,0) rotate(228deg) scale(.14); filter: brightness(1.6); }
+  64% { transform: translate3d(-5px,6px,0) rotate(300deg) scale(.6); filter: brightness(1.1); }
+  84% { transform: translate3d(0,-2px,0) rotate(348deg) scale(1.09); filter: brightness(1); }
   100% { transform: translate3d(0,0,0) rotate(360deg) scale(1); }
 }
 @keyframes nexoaureo-logo-glow { 0%, 100% { opacity: 0; transform: scale(.75); } 42% { opacity: 1; transform: scale(1.55); } }
@@ -282,6 +286,25 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 .report-grid { gap: 19px; }
 .report-card { overflow: hidden; }
 .report-card:hover { transform: translateY(-4px); box-shadow: 0 27px 55px rgba(7,25,43,.1); }
+
+/* Transición real entre pantallas de la aplicación: reutiliza la misma
+   animación de entrada (future-rise) que ya usan los paneles de la
+   portada, para que cambiar de vista en el panel principal se sienta
+   con el mismo nivel de acabado que el resto del sistema. */
+.app-content { animation: future-rise .38s cubic-bezier(.22,.78,.2,1) both; }
+
+/* Botones desactivados de verdad: nunca simulan una acción disponible. */
+.calc-results button:disabled { cursor: not-allowed; opacity: .5; }
+.calc-results button:disabled:hover { transform: none; }
+
+/* Estado honesto de "Reportes" — sin datos de muestra. Mismo lenguaje
+   visual oscuro/dorado que el resto de los paneles destacados, con un
+   barrido ambiental sutil (misma animación que .panel-scan). */
+.reports-soon { position: relative; overflow: hidden; margin-top: 19px; padding: 60px 30px; text-align: center; border: 1px solid rgba(212,175,55,.15); border-radius: 22px; color: white; background: radial-gradient(circle at 20% 15%, rgba(212,175,55,.1), transparent 32%), linear-gradient(150deg, #07182c, #0b2945); }
+.reports-soon__scan { position: absolute; z-index: 0; left: 0; right: 0; top: -40%; height: 60%; pointer-events: none; background: linear-gradient(transparent, rgba(212,175,55,.09), rgba(63,158,210,.06), transparent); animation: future-scan 6.4s linear infinite; }
+.reports-soon > span { position: relative; display: block; margin-bottom: 14px; font-size: 26px; color: var(--future-gold-2); }
+.reports-soon > h3 { position: relative; margin: 0 0 10px; font-family: var(--font-geist-sans), sans-serif; font-size: 19px; font-weight: 620; letter-spacing: -.02em; }
+.reports-soon > p { position: relative; max-width: 44ch; margin: 0 auto; color: rgba(196,214,226,.72); font-size: 11px; line-height: 1.65; }
 .report-cover, .cover-2, .cover-3 { background: radial-gradient(circle at 75% 25%, rgba(212,175,55,.19), transparent 28%), linear-gradient(145deg, #102f4d, #061321); }
 .report-cover::after { border-color: rgba(212,175,55,.22); box-shadow: 0 0 0 26px rgba(55,133,178,.045), 0 0 38px rgba(212,175,55,.08); }
 .report-card button { color: #8a6814; }
@@ -488,6 +511,6 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 .campaign-card:hover { border-color: rgba(212,175,55,.28); box-shadow: 0 20px 42px rgba(7,25,43,.09); transform: translateY(-3px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .future-backdrop *, .hero-panel-wrap, .workspace-tag i, .panel-live i, .welcome-scan, .panel-scan { animation: none !important; }
+  .future-backdrop *, .hero-panel-wrap, .workspace-tag i, .panel-live i, .welcome-scan, .panel-scan, .app-content, .reports-soon__scan { animation: none !important; }
   button, a, input, select, textarea { transition-duration: .001ms !important; }
 }
