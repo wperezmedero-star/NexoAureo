@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           cat .claude-upload/part*.b64 | tr -d '\n' | base64 -d > /tmp/nexoaureo-update.zip
-          echo "86e248b7de4bf5e3fe982b822f21f5c7ff9432c6217df536a62bd0ba46986dfc  /tmp/nexoaureo-update.zip" | sha256sum -c -
+          echo "efa62076b1f799cae70b6357d2b2d823df48a3fc7f0f36e997e2abaabf6d0f82  /tmp/nexoaureo-update.zip" | sha256sum -c -
           rm -rf /tmp/nexoaureo-update
           mkdir -p /tmp/nexoaureo-update
           unzip -q /tmp/nexoaureo-update.zip -d /tmp/nexoaureo-update
