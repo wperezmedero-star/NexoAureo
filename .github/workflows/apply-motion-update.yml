@@ -16,26 +16,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild supplied ZIP and verify integrity
+      - name: Verify supplied app files
         shell: bash
         run: |
           set -euo pipefail
-          cat .motion-upload/part*.b64 | tr -d '\n' | base64 -d > /tmp/nexoaureo-motion.zip
-          echo "2a262de000fefdb70628eb1da0160924275516a98d5bcdc46f04340062f0bae1  /tmp/nexoaureo-motion.zip" | sha256sum -c -
-          rm -rf /tmp/nexoaureo-motion
-          mkdir -p /tmp/nexoaureo-motion
-          unzip -q /tmp/nexoaureo-motion.zip -d /tmp/nexoaureo-motion
-          echo "9709d11207699bf27bd528eff771bd6987416349d9b30db536aa0947b38fb024  /tmp/nexoaureo-motion/NexoAureo_movimiento/app/page.tsx" | sha256sum -c -
-          echo "dd1e3469e5c6aa61fb5404823a6077c5c4fa69bcd53116d188f35f1834bbcab4  /tmp/nexoaureo-motion/NexoAureo_movimiento/app/globals.css" | sha256sum -c -
-          echo "56260dcfd66b70f92a1f094717194b46d5a589fce49e63cc283210e4fa5be79d  /tmp/nexoaureo-motion/NexoAureo_movimiento/app/future.css" | sha256sum -c -
-
-      - name: Integrate exactly the three app files
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp /tmp/nexoaureo-motion/NexoAureo_movimiento/app/page.tsx app/page.tsx
-          cp /tmp/nexoaureo-motion/NexoAureo_movimiento/app/globals.css app/globals.css
-          cp /tmp/nexoaureo-motion/NexoAureo_movimiento/app/future.css app/future.css
+          echo "9709d11207699bf27bd528eff771bd6987416349d9b30db536aa0947b38fb024  app/page.tsx" | sha256sum -c -
+          echo "dd1e3469e5c6aa61fb5404823a6077c5c4fa69bcd53116d188f35f1834bbcab4  app/globals.css" | sha256sum -c -
+          echo "56260dcfd66b70f92a1f094717194b46d5a589fce49e63cc283210e4fa5be79d  app/future.css" | sha256sum -c -
 
       - name: Verify project
         shell: bash
@@ -52,9 +39,10 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .motion-upload
+          rm -f .motion-update.patch
           rm -f .github/workflows/apply-motion-update.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Integrate NexoAureo motion and accessibility improvements"
+          git commit -m "Finalize NexoAureo motion improvements"
           git push origin HEAD:main
