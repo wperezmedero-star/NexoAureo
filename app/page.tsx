@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import NeedsAnalysisView from "./components/analysis/NeedsAnalysisView";
 
@@ -218,16 +218,58 @@ function HeroPanel() {
   return <div className="hero-panel-wrap"><div className="hero-glow" /><div className="hero-orbit" /><div className="hero-panel"><div className="panel-scan" /><div className="mini-sidebar"><span className="mini-logo" aria-hidden="true"><Image src="/brand/nexoaureo-mark.png" alt="" width={352} height={350} /></span><i /><i /><i /><i /><b /></div><div className="panel-main"><div className="panel-top"><div><small>RESUMEN DEL CLIENTE</small><strong>Familia Rivera</strong></div><em className="panel-live"><i /> MOTOR ACTIVO</em><span>WP</span></div><div className="health-card"><div><small>ÍNDICE DE PREPARACIÓN</small><strong>82</strong><span>de 100</span></div><div className="score-ring"><b>82%</b></div></div><div className="panel-stats"><div><small>Protección</small><strong>74%</strong><i style={{ width: "74%" }} /></div><div><small>Retiro</small><strong>68%</strong><i style={{ width: "68%" }} /></div></div><div className="opportunity-card"><span>✦</span><div><small>PRÓXIMA PRIORIDAD</small><strong>Fortalecer el fondo de emergencia</strong></div><b>→</b></div></div></div><div className="floating-card float-one"><span>✓</span><div><small>Análisis completado</small><strong>12 de 12 etapas</strong></div></div><div className="floating-card float-two"><span>↗</span><div><small>Meta proyectada</small><strong>$1.28 M</strong></div></div></div>;
 }
 
+/** Anima un número contando desde cero hasta su valor real cuando los datos
+    llegan. Usa requestAnimationFrame con una curva de desaceleración, así que
+    el conteo empieza rápido y frena al acercarse — se siente como un dato
+    asentándose, no como un cronómetro. Respeta prefers-reduced-motion:
+    si el usuario pidió menos movimiento, muestra el valor final de inmediato. */
+function CountUp({ value, duration = 900 }: { value: number; duration?: number }) {
+  const [shown, setShown] = useState(value);
+  const previous = useRef(value);
+
+  useEffect(() => {
+    const from = previous.current;
+    const to = value;
+    previous.current = value;
+
+    if (from === to) return;
+
+    let raf = 0;
+    const reduce = typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Todo el estado se actualiza dentro del callback de rAF, nunca de forma
+    // síncrona en el cuerpo del efecto: incluso el caso de movimiento
+    // reducido salta al valor final en el primer fotograma.
+    const started = performance.now();
+    const step = (now: number) => {
+      if (reduce) {
+        setShown(to);
+        return;
+      }
+      const progress = Math.min((now - started) / duration, 1);
+      // easeOutCubic: arranca rápido, frena suave al final.
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setShown(Math.round(from + (to - from) * eased));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+
+  return <>{shown}</>;
+}
+
 function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) {
   const { data, loading, error } = useCommercialOverview();
   return <>
     <section className="welcome-card"><div className="welcome-scan" aria-hidden="true" /><div><span>NÚCLEO OPERATIVO · SEPARACIÓN ACTIVA</span><h2>De cada contacto, un próximo paso claro.</h2><p>Organiza prospectos, tareas y citas sin mezclar la información comercial con la entrevista privada.</p></div><button onClick={() => onNavigate("prospectos")}>+ Nuevo prospecto</button></section>
     {error && <InlineError message={error} />}
     <div className="stat-grid">
-      <Stat label="Prospectos" value={loading ? "—" : String(data?.metrics.totalProspects ?? 0)} note="Con consentimiento" tone="green" />
-      <Stat label="Tareas pendientes" value={loading ? "—" : String(data?.metrics.pendingTasks ?? 0)} note="Seguimientos activos" tone="gold" />
-      <Stat label="Próximas citas" value={loading ? "—" : String(data?.metrics.upcomingAppointments ?? 0)} note="Recordatorios en borrador" tone="blue" />
-      <Stat label="Campañas" value={loading ? "—" : String(data?.metrics.draftCampaigns ?? 0)} note="Sin envío automático" tone="purple" />
+      <Stat label="Prospectos" value={data?.metrics.totalProspects ?? 0} loading={loading} note="Con consentimiento" tone="green" index={0} />
+      <Stat label="Tareas pendientes" value={data?.metrics.pendingTasks ?? 0} loading={loading} note="Seguimientos activos" tone="gold" index={1} />
+      <Stat label="Próximas citas" value={data?.metrics.upcomingAppointments ?? 0} loading={loading} note="Recordatorios en borrador" tone="blue" index={2} />
+      <Stat label="Campañas" value={data?.metrics.draftCampaigns ?? 0} loading={loading} note="Sin envío automático" tone="purple" index={3} />
     </div>
     <div className="dashboard-grid">
       <section className="app-card recent-card"><div className="card-heading"><div><span>RELACIONES RECIENTES</span><h3>Prospectos y próximos pasos</h3></div><button onClick={() => onNavigate("crm")}>Abrir CRM</button></div>{data?.prospects.slice(0, 4).map((prospect) => <ProspectRow prospect={prospect} key={prospect.id} />)}{!loading && !data?.prospects.length && <EmptyLine text="Todavía no hay prospectos guardados." />}</section>
@@ -237,7 +279,12 @@ function Dashboard({ onNavigate }: { onNavigate: (view: View) => void }) {
   </>;
 }
 
-function Stat({ label, value, note, tone }: { label: string; value: string; note: string; tone: string }) { return <article className="stat-card"><span className={`stat-icon ${tone}`}>◇</span><div><small>{label}</small><strong>{value}</strong><p>{note}</p></div></article>; }
+function Stat({ label, value, note, tone, loading, index }: { label: string; value: number; note: string; tone: string; loading: boolean; index: number }) {
+  return <article className="stat-card stat-card--enter" style={{ ["--stat-delay" as string]: `${index * 90}ms` }}>
+    <span className={`stat-icon ${tone}`}>◇</span>
+    <div><small>{label}</small><strong>{loading ? "—" : <CountUp value={value} />}</strong><p>{note}</p></div>
+  </article>;
+}
 
 type Prospect = { id: string; fullName: string; preferredLanguage: string; preferredChannel: string; contactPreview: string; interest: string; source: string; status: string; consentVersion: string; consentAt: string; notes: string; nextActionAt: string | null; createdAt: string; updatedAt: string };
 type FollowUpTask = { id: string; prospectId: string | null; title: string; dueAt: string; priority: string; status: string };

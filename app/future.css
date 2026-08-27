@@ -254,7 +254,12 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 .commercial-primary { color: #08182c; border-radius: 12px; background: linear-gradient(135deg, #f2d778, #c99b25); box-shadow: 0 12px 28px rgba(170,127,26,.16); }
 .pipeline-board { gap: 13px; }
 .pipeline-column { padding: 13px; background: rgba(233,237,235,.66); }
-.pipeline-card { border-color: rgba(8,33,55,.08); border-radius: 13px; background: rgba(255,255,255,.88); box-shadow: 0 9px 24px rgba(7,25,43,.06); }
+.pipeline-card { border-color: rgba(8,33,55,.08); border-radius: 13px; background: rgba(255,255,255,.88); box-shadow: 0 9px 24px rgba(7,25,43,.06); animation: pipeline-land .42s cubic-bezier(.22,.78,.2,1) both; }
+/* Al mover un prospecto de etapa, React remonta la tarjeta en su nueva
+   columna (la key es el id del prospecto). Esta animación hace que ese
+   cambio se vea como una llegada, en vez de un salto instantáneo que
+   obliga a buscar dónde quedó la tarjeta. */
+@keyframes pipeline-land { from { opacity: 0; transform: translate3d(0, -10px, 0) scale(.97); } to { opacity: 1; transform: none; } }
 .pipeline-card:hover { border-color: rgba(212,175,55,.25); transform: translateY(-2px); }
 .pipeline-card > div:first-child small { color: #8d6b15; }
 .date-block { color: #fff2bd; background: linear-gradient(145deg, #16415f, #0a2036); border: 1px solid rgba(212,175,55,.16); }
@@ -503,6 +508,20 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
    alterar las proporciones del diseño original. */
 .icon-button { width: 40px; height: 40px; }
 
+/* Entrada escalonada de las tarjetas de métricas: cada una entra 90ms
+   después de la anterior (el retraso lo fija el componente con la variable
+   --stat-delay), así el panel se compone ante los ojos en vez de aparecer
+   de golpe. Es movimiento que comunica orden de lectura, no adorno. */
+.stat-card--enter { animation: stat-enter .5s cubic-bezier(.22,.78,.2,1) both; animation-delay: var(--stat-delay, 0ms); }
+@keyframes stat-enter { from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* Los medidores circulares se dibujan de 0 a su valor al aparecer, en vez
+   de mostrarse ya completos: el arco se llena y comunica que el dato acaba
+   de calcularse. Se aplica a los dos anillos del sistema. */
+.nx-gauge__ring, .nx-readiness__ring { animation: gauge-draw .95s cubic-bezier(.22,.78,.2,1) both; }
+@keyframes gauge-draw { from { --nx-gauge-value: 0%; } }
+@property --nx-gauge-value { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+
 /* Texto de la Base verificada y de la agenda que quedó por debajo del piso
    legible en la revisión anterior. Son las últimas reglas activas de 7–8px
    del sistema; el resto de las que quedan pertenece a la pantalla de
@@ -530,6 +549,6 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 .campaign-card:hover { border-color: rgba(212,175,55,.28); box-shadow: 0 20px 42px rgba(7,25,43,.09); transform: translateY(-3px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .future-backdrop *, .hero-panel-wrap, .workspace-tag i, .panel-live i, .welcome-scan, .panel-scan, .app-content, .reports-soon__scan { animation: none !important; }
+  .future-backdrop *, .hero-panel-wrap, .workspace-tag i, .panel-live i, .welcome-scan, .panel-scan, .app-content, .reports-soon__scan, .stat-card--enter, .pipeline-card, .nx-gauge__ring, .nx-readiness__ring { animation: none !important; }
   button, a, input, select, textarea { transition-duration: .001ms !important; }
 }
