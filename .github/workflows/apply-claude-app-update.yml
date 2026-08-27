@@ -1,0 +1,60 @@
+name: Apply Claude app update
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild supplied ZIP and verify integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .claude-upload/part*.b64 | tr -d '\n' | base64 -d > /tmp/nexoaureo-update.zip
+          echo "efa62076b1f799cae70b6357d2b2d823df48a3fc7f0f36e997e2abaabf6d0f82  /tmp/nexoaureo-update.zip" | sha256sum -c -
+          rm -rf /tmp/nexoaureo-update
+          mkdir -p /tmp/nexoaureo-update
+          unzip -q /tmp/nexoaureo-update.zip -d /tmp/nexoaureo-update
+          echo "3726fcb4063d47a22525ab32298b754158cd556b4dfc8bc68adfef4725fc85f4  /tmp/nexoaureo-update/NexoAureo_mejoras/app/page.tsx" | sha256sum -c -
+          echo "dd1e3469e5c6aa61fb5404823a6077c5c4fa69bcd53116d188f35f1834bbcab4  /tmp/nexoaureo-update/NexoAureo_mejoras/app/globals.css" | sha256sum -c -
+          echo "550bfd6fd4ff79d79db5e4e9af8ed1f728102d30caf3021f40e40b34bcb476bd  /tmp/nexoaureo-update/NexoAureo_mejoras/app/future.css" | sha256sum -c -
+
+      - name: Integrate exactly the three app files
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/nexoaureo-update/NexoAureo_mejoras/app/page.tsx app/page.tsx
+          cp /tmp/nexoaureo-update/NexoAureo_mejoras/app/globals.css app/globals.css
+          cp /tmp/nexoaureo-update/NexoAureo_mejoras/app/future.css app/future.css
+
+      - name: Verify project
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run lint
+          npm run test:engine
+          npm run test:auth
+          npm run build
+
+      - name: Publish clean result to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .claude-upload
+          rm -f .github/workflows/apply-claude-app-update.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Integrate Claude app improvements"
+          git push origin HEAD:main
