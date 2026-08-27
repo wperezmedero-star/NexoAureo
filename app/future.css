@@ -198,7 +198,7 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
 
 .app-main { position: relative; z-index: 2; }
 .app-header { position: sticky; top: 0; z-index: 30; min-height: 94px; padding: 18px 35px; border-color: rgba(10,31,53,.09); background: rgba(249,248,243,.79); box-shadow: 0 8px 30px rgba(7,24,44,.045); backdrop-filter: blur(22px) saturate(125%); }
-.app-header h1 { color: var(--future-navy); font-family: var(--font-geist-sans), sans-serif; font-size: 27px; font-weight: 620; letter-spacing: -.035em; }
+.app-header h1, .app-header h2 { color: var(--future-navy); font-family: var(--font-geist-sans), sans-serif; font-size: 27px; font-weight: 620; letter-spacing: -.035em; }
 .eyebrow-dark { color: #7b8798; letter-spacing: .13em; }
 .system-status { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; color: #385571; border: 1px solid rgba(10,44,72,.1); border-radius: 999px; background: rgba(255,255,255,.62); font-size: 8px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
 .system-status i { width: 6px; height: 6px; border-radius: 50%; background: #21a776; box-shadow: 0 0 0 4px rgba(33,167,118,.09), 0 0 12px rgba(33,167,118,.34); }
@@ -448,7 +448,7 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
   .light-section { padding-top: 104px; }
   .feature-card { padding: 27px; border-radius: 20px; }
   .app-header { padding: 13px 17px; }
-  .app-header h1 { font-size: 21px; }
+  .app-header h1, .app-header h2 { font-size: 21px; }
   .system-status { display: none; }
   .app-content { padding: 18px 14px 98px; }
   .welcome-card { min-height: 235px; padding: 27px; border-radius: 19px; }
@@ -502,6 +502,25 @@ footer { background: #030a13; border-top: 1px solid rgba(255,255,255,.07); }
    24px, pero se acercan más a las áreas táctiles del resto del sistema sin
    alterar las proporciones del diseño original. */
 .icon-button { width: 40px; height: 40px; }
+
+/* Texto de la Base verificada y de la agenda que quedó por debajo del piso
+   legible en la revisión anterior. Son las últimas reglas activas de 7–8px
+   del sistema; el resto de las que quedan pertenece a la pantalla de
+   análisis anterior, que ya no se renderiza. */
+.priority small,
+.knowledge-stamp small, .knowledge-stamp em,
+.knowledge-stats span,
+.source-card > div span, .source-card p, .source-card > small, .source-card > em,
+.rules-table small, .rules-table p, .rules-table > div > b {
+  font-size: 10px;
+}
+
+/* Enlace "Saltar al contenido": invisible hasta recibir foco por teclado.
+   Con un sidebar de nueve secciones más el encabezado, sin esto hay que
+   recorrer ~15 elementos antes de llegar al contenido en cada pantalla. */
+.skip-link { position: absolute; z-index: 200; top: 10px; left: 10px; padding: 12px 18px; border-radius: 10px; color: #07182c; background: var(--future-gold-2, #e2c467); font-size: 13px; font-weight: 800; text-decoration: none; box-shadow: 0 12px 30px rgba(7,25,43,.28); transform: translateY(-160%); transition: transform .18s ease; }
+.skip-link:focus-visible { transform: translateY(0); outline: 2px solid #07182c; outline-offset: 2px; }
+.app-content:focus { outline: none; }
 .icon-button b { width: 16px; height: 16px; top: -4px; right: -4px; }
 .modal-close { width: 36px; height: 36px; }
 .sidebar nav button, .mobile-app-nav button { min-height: 44px; }

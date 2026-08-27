@@ -55,6 +55,7 @@ function Logo({ light = false, animate = false, compact = false }: { light?: boo
 
 export default function Home() {
   const [mode, setMode] = useState<"landing" | "app">("landing");
+  const commercial = useCommercialOverview();
   const [modal, setModal] = useState(false);
   const [view, setView] = useState<View>("inicio");
   const [pendingView, setPendingView] = useState<View>("inicio");
@@ -147,9 +148,11 @@ export default function Home() {
     ? auth.user
     : { displayName: "Usuario autorizado", initials: "NA" };
   const firstName = signedInUser.displayName.split(/\s+/)[0] || "William";
+  const attentionCount = countAttentionItems(commercial.data);
 
   if (mode === "app") {
     return <main className="app-shell">
+      <a className="skip-link" href="#contenido-principal">Saltar al contenido</a>
       <FutureBackdrop variant="app" />
       <aside className="sidebar">
         <Logo light animate key={mode} /><div className="workspace-tag"><i /> NEXOÁUREO · INTELLIGENCE</div>
@@ -168,8 +171,8 @@ export default function Home() {
         <button className="back-site" onClick={() => setMode("landing")}>← Volver al sitio</button>
       </aside>
       <section className="app-main">
-        <header className="app-header"><div><span className="eyebrow-dark">Licencia 2-15 emitida · nombramiento pendiente</span><h1>{view === "inicio" ? `Buenos días, ${firstName}` : viewTitles[view]}</h1></div><div className="header-actions"><div className="system-status"><i /> Sesión segura · motor activo</div><button className="icon-button" aria-label="Notificaciones">◌<b>3</b></button><div className="user-chip"><span>{signedInUser.initials}</span><div><strong>{signedInUser.displayName}</strong><small>Cuenta autorizada</small></div></div><a className="logout-button" href="/signout-with-chatgpt?return_to=%2F">Cerrar sesión</a></div></header>
-        <div className="app-content" key={view}>
+        <header className="app-header"><div><span className="eyebrow-dark">Licencia 2-15 emitida · nombramiento pendiente</span><h2>{view === "inicio" ? `Buenos días, ${firstName}` : viewTitles[view]}</h2></div><div className="header-actions"><div className="system-status"><i /> Sesión segura · motor activo</div><button className="icon-button" aria-label={attentionCount > 0 ? `Requieren atención hoy: ${attentionCount}. Ir a la agenda` : "Nada requiere atención hoy. Ir a la agenda"} title={attentionCount > 0 ? `${attentionCount} pendiente(s) para hoy` : "Sin pendientes para hoy"} onClick={() => setView("agenda")}>◌{attentionCount > 0 && <b>{attentionCount}</b>}</button><div className="user-chip"><span>{signedInUser.initials}</span><div><strong>{signedInUser.displayName}</strong><small>Cuenta autorizada</small></div></div><a className="logout-button" href="/signout-with-chatgpt?return_to=%2F">Cerrar sesión</a></div></header>
+        <div className="app-content" id="contenido-principal" tabIndex={-1} key={view}>
           {view === "inicio" && <Dashboard onNavigate={setView} />}
           {view === "prospectos" && <Prospects />}
           {view === "crm" && <CrmPipeline />}
@@ -253,6 +256,32 @@ function useCommercialOverview() {
   const [error, setError] = useState("");
   useEffect(() => { let active = true; fetch("/api/commercial").then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body as CommercialOverview; }).then((body) => { if (active) setData(body); }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "No fue posible cargar el espacio comercial."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, []);
   return { data, setData, loading, error, setError };
+}
+
+/** Cuenta lo que realmente requiere atención hoy: tareas pendientes vencidas
+    o que vencen hoy, más citas programadas para hoy. Todo sale de datos que
+    /api/commercial ya devuelve — no hay endpoint nuevo ni cifras inventadas.
+    Si no hay nada pendiente, devuelve 0 y la insignia no se muestra. */
+function countAttentionItems(data: CommercialOverview | null) {
+  if (!data) return 0;
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  const limit = endOfToday.getTime();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const dueTasks = data.tasks.filter((task) => {
+    if (task.status !== "pendiente") return false;
+    const due = new Date(task.dueAt).getTime();
+    return Number.isFinite(due) && due <= limit;
+  }).length;
+
+  const todayAppointments = data.appointments.filter((appointment) => {
+    const starts = new Date(appointment.startsAt).getTime();
+    return Number.isFinite(starts) && starts >= startOfToday.getTime() && starts <= limit;
+  }).length;
+
+  return dueTasks + todayAppointments;
 }
 
 async function commercialAction(payload: Record<string, unknown>) {
